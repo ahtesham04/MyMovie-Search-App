@@ -1,25 +1,141 @@
-import logo from './logo.svg';
-import './App.css';
+
+import "./App.css";
+import React, { useEffect, useState } from "react";
+
+import MovieCard from "./components/movieCard";
+import MovieDetailContainer from "./components/movieDetailContainer";
+
+
 
 function App() {
+  const [searchQuery, updateSearchQuery] = useState("");
+  const [movieList, updateMovieList] = useState([]);
+  const [selectedMovie, setSelectedMovie] = useState({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const [postsPerPage] = useState(50);
+  const [totalPosts, settotalPosts] = useState(0);
+  const [state, setState] = useState(true);
+  const [refresh, setRefresh] = useState(false)
+  const [filtered, setFiltered] = useState([])
+
+  const url =
+    "https://d3dyfaf3iutrxo.cloudfront.net/general/upload/8cc907c1bb9b404e8cb181825938fc23-data.json";
+
+  useEffect(() => {
+    fetch(url, {
+      "Access-Control-Allow-Origin": "https://localhost:3000",
+    })
+      .then((r) => r.json())
+      .then((r) => {
+        updateMovieList(r);
+        setFiltered(r)
+        settotalPosts(r.length);
+      });
+  }, [refresh]);
+
+  const paginate = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+  const pageNumbers = [];
+  for (let i = 1; i <= Math.ceil(totalPosts / postsPerPage); i++) {
+    pageNumbers.push(i);
+  }
+  const indexOfLastPost = currentPage * postsPerPage;
+  const indexOfFirstPost = indexOfLastPost - postsPerPage;
+  const currentPosts =
+    filtered && filtered.slice(indexOfFirstPost, indexOfLastPost);
+
+  useEffect(() => {
+  }, [state])
+
+  const selectMovie = (movie) => {
+    setSelectedMovie(movie)
+  }
+
+  useEffect(() => {
+    const arr = []
+    movieList.filter((x) =>
+      x.Title.toLowerCase().includes(searchQuery.toLocaleLowerCase()) ? arr.push(x) : null
+    )
+    setFiltered(arr)
+  }, [searchQuery])
+
+  console.log(filtered)
+
+  const onTextChange = (e) => {
+    updateSearchQuery(e.target.value);
+    setSelectedMovie({})
+    console.log("called")
+
+  }
+  const clearSlectedMovie = () => {
+    setSelectedMovie({})
+  }
+
+
+
+  const sortByTitle = () => {
+    movieList.sort(function (a, b) {
+      return a.Title.localeCompare(b.Title)
+    });
+    setState(!state)
+  }
+  const sortByIMDB = () => {
+    movieList.sort(function (a, b) {
+      return b.imdbRating.localeCompare(a.imdbRating)
+    });
+    console.log(movieList)
+    setState(!state)
+  }
+  console.log(selectedMovie)
+  const sortByYear = () => {
+    movieList.sort(function (a, b) {
+      return a.Year.localeCompare(b.Year)
+    });
+    setState(!state)
+  }
+  console.log(Object.keys(selectedMovie).length)
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
+    <div className="container">
+      <header className="header">
+        <div className="title">
+          {/* <img src="/react-movie-app/movie-icon.svg" id="movieImage" /> */}
+          Welcome to My Movie App
+        </div>
+        <div className="search-container">
+          {/* <img src="/react-movie-app/search-icon.svg" id="searchIcon" /> */}
+          <input value={searchQuery} className="inpt" placeholder="Search Movie by title" onChange={(e) => onTextChange(e)} />
+          {
+            searchQuery.length > 0 ? <button onClick={() => { setRefresh(!refresh); updateSearchQuery('') }}>X</button> : null
+          }
+        </div>
       </header>
+      <div className="btn-cont">
+        <div className="sort">Sortby:</div>
+        <button className="srt-btn" onClick={sortByTitle}>Title</button>
+        <button className="srt-btn" onClick={sortByYear}>Year</button>
+        <button className="srt-btn" onClick={sortByIMDB}>imdb Rating</button>
+      </div>
+      {selectedMovie && Object.keys(selectedMovie) == 0 ? null : <MovieDetailContainer selectedMovie={selectedMovie} clearSlectedMovie={clearSlectedMovie} />
+      }
+      <div className="movie-container">
+        {currentPosts && currentPosts.map((movie, index) => {
+          return <MovieCard key={index} movie={movie} selectMovie={selectMovie} />
+
+        })}
+      </div>
+      <div className="divMAin">
+        {pageNumbers.map((item, index) => {
+          return (
+            <button key={index} className="btn" onClick={() => paginate(item)}>
+              {item}
+            </button>
+          );
+        })}
+      </div>
+
     </div>
-  );
+  )
 }
 
 export default App;
